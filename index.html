@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Restaurant Billing System</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #f2f2f2;
+            padding: 20px;
+            text-align: center;
+        }
+
+        h1 {
+            color: #444;
+        }
+
+        input[type="text"] {
+            padding: 10px;
+            width: 250px;
+            font-size: 16px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+            margin-bottom: 10px;
+        }
+
+        .menu {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .menu button {
+            background-color: #ff6347;
+            color: white;
+            border: none;
+            padding: 10px 12px;
+            font-size: 14px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .menu button:hover {
+            background-color: #e5533f;
+        }
+
+        .summary,
+        .history {
+            margin-top: 20px;
+            text-align: left;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-group {
+            margin-top: 20px;
+        }
+
+        .btn-group button {
+            margin: 5px;
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            font-size: 16px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .btn-group button:hover {
+            background-color: #45a049;
+        }
+
+        pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>Restaurant Order Billing</h1>
+
+    <input type="text" id="orderNumber" placeholder="Enter Order Number" />
+
+    <div class="menu" id="menu"></div>
+
+    <div class="summary">
+        <h3>Ordered Items:</h3>
+        <ul id="orderedItems"></ul>
+        <h3>Total: ₹<span id="totalAmount">0</span></h3>
+        <button onclick="completeOrder()">Complete Order</button>
+    </div>
+
+    <div class="btn-group">
+        <button onclick="viewAllOrders()">View All Orders</button>
+        <button onclick="viewOrderSummaries()">View Order Summary</button>
+        <button onclick="clearViews()">Clear View</button>
+    </div>
+
+    <div style="margin-top: 20px;">
+        <input type="text" id="deleteOrderInput" placeholder="Enter Order Number to Delete" />
+        <button onclick="deleteOrder()">Delete Order</button>
+    </div>
+
+    <div class="history">
+        <h3>Order Details:</h3>
+        <pre id="ordersOutput"></pre>
+        <h3>Order Summary:</h3>
+        <pre id="orderSummaryOutput"></pre>
+    </div>
+
+    <script>
+        const menuItems = {
+            "Plain Dosa": 40,
+            "Masala Dosa": 60,
+            "Upma Dosa": 60,
+            "Onion Dosa": 60,
+            "Masala Onion Dosa": 70,
+            "Upma Onion Dosa": 70,
+            "Podi Dosa": 60,
+            "Ghee Roast Dosa": 60,
+            "Ghee Podi Dosa": 60,
+            "Karam Dosa": 60,
+            "Egg Dosa": 65,
+            "Egg Onion Dosa": 75,
+            "Double Egg Dosa": 80,
+            "Chicken Dosa": 100,
+            "Chicken Pulav": 160,
+            "Idly": 40,
+            "Bonda": 40,
+            "Chapathi": 50,
+            "Parotta": 50,
+            "Single Egg Omlet": 20,
+            "Double Egg Omlet": 40
+        };
+
+        let currentOrder = {};
+        let currentTotal = 0;
+
+        const menuDiv = document.getElementById("menu");
+        const orderedItemsList = document.getElementById("orderedItems");
+        const totalAmountSpan = document.getElementById("totalAmount");
+
+        function updateOrderDisplay() {
+            orderedItemsList.innerHTML = '';
+            for (const item in currentOrder) {
+                const li = document.createElement("li");
+                li.textContent = `${item} x ${currentOrder[item]}`;
+                orderedItemsList.appendChild(li);
+            }
+            totalAmountSpan.textContent = currentTotal;
+        }
+
+        function addItem(item) {
+            currentOrder[item] = (currentOrder[item] || 0) + 1;
+            currentTotal += menuItems[item];
+            updateOrderDisplay();
+        }
+
+        function completeOrder() {
+            const orderNumber = document.getElementById("orderNumber").value.trim();
+            if (!orderNumber) {
+                alert("Please enter a valid Order Number.");
+                return;
+            }
+
+            const existingOrders = JSON.parse(localStorage.getItem("orders") || "{}");
+            existingOrders[orderNumber] = {
+                items: currentOrder,
+                total: currentTotal
+            };
+            localStorage.setItem("orders", JSON.stringify(existingOrders));
+
+            currentOrder = {};
+            currentTotal = 0;
+            document.getElementById("orderNumber").value = '';
+            updateOrderDisplay();
+            alert("Order saved successfully!");
+        }
+
+        function viewAllOrders() {
+            const orders = JSON.parse(localStorage.getItem("orders") || "{}");
+            const output = document.getElementById("ordersOutput");
+            let displayText = "";
+
+            for (const orderNo in orders) {
+                displayText += `Order No: ${orderNo}\nItems:\n`;
+                const items = orders[orderNo].items;
+                for (const item in items) {
+                    displayText += `- ${item} x ${items[item]}\n`;
+                }
+                displayText += `Total: ₹${orders[orderNo].total}\n\n`;
+            }
+
+            output.textContent = displayText.trim();
+        }
+
+        function viewOrderSummaries() {
+            const orders = JSON.parse(localStorage.getItem("orders") || "{}");
+            const output = document.getElementById("orderSummaryOutput");
+            let displayText = "";
+
+            for (const orderNo in orders) {
+                displayText += `${orderNo} - ${orders[orderNo].total}rs\n`;
+            }
+
+            output.textContent = displayText.trim();
+        }
+
+        function clearViews() {
+            document.getElementById("ordersOutput").textContent = '';
+            document.getElementById("orderSummaryOutput").textContent = '';
+        }
+
+        function deleteOrder() {
+            const orderNo = document.getElementById("deleteOrderInput").value.trim();
+            if (!orderNo) {
+                alert("Please enter an order number to delete.");
+                return;
+            }
+
+            const orders = JSON.parse(localStorage.getItem("orders") || "{}");
+
+            if (orders[orderNo]) {
+                delete orders[orderNo];
+                localStorage.setItem("orders", JSON.stringify(orders));
+                alert(`Order ${orderNo} deleted successfully.`);
+                clearViews();
+            } else {
+                alert(`Order ${orderNo} not found.`);
+            }
+
+            document.getElementById("deleteOrderInput").value = '';
+        }
+
+        // Create menu buttons
+        for (const item in menuItems) {
+            const btn = document.createElement("button");
+            btn.textContent = `${item} (₹${menuItems[item]})`;
+            btn.onclick = () => addItem(item);
+            menuDiv.appendChild(btn);
+        }
+
+        updateOrderDisplay();
+    </script>
+
+</body>
+
+</html>
